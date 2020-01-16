@@ -1,0 +1,484 @@
+---
+title: "Portifólio_Maria_Pereira_Bico"
+author: "Mary"
+date: "July 01, 2019"
+output: html_document
+---
+Portifólio construido com base nas aulas de R , trabalho apresentado para a disciplina e estudos através do livro Murray, Steven. Aprenda R em um dia. SJ Murray. Edição do Kindle, curso iterativo Aprenda R no R e pesquisas na internet.
+https://cran.r-project.org/doc/contrib/Short-refcard.pdf
+https://pt.stackoverflow.com/
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Verificando se os pacotes necessários já estão instalados, utilizando a função require. Caso não esteja instalado require retoranará FALSE. Coloquei uma condição para executar a instalação (install.packages) do pacote neste caso.
+
+```{r} 
+options(warn=-1) #utilizo para inibir os avisos
+if (!require("dplyr"))      {install.packages("dplyr")}
+if (!require("tidyr"))      {install.packages("tidyr")}
+if (!require("GGally"))     {install.packages("GGally")}
+if (!require("corrplot"))   {install.packages("corrplot")}
+if (!require("DAAG"))       {install.packages("DAAG")}
+if (!require("rpart"))      {install.packages("rpart")}
+if (!require("ggplot2"))    {install.packages("ggplot2")}
+if (!require("rpart.plot")) {install.packages("rpart.plot")}
+if (!require("InformationValue")) {install.packages("InformationValue")}
+if (!require("rattle"))     {install.packages("rattle")}
+if (!require("tclust"))     {install.packages("tclust")}
+if (!require("cluster"))    {install.packages("cluster")}
+if (!require("fpc"))        {install.packages("fpc")}
+if (!require("pheatmap"))   {install.packages("pheatmap")}
+if (!require("ggcorrplot")) {install.packages("ggcorrplot")}
+if (!require("factoextra")) {install.packages("factoextra")}
+if (!require("NbClust"))    {install.packages("NbClust")}
+if (!require("gridExtra"))  {install.packages("gridExtra")}
+if (!require("ape"))        {install.packages("ape")}
+if (!require("pvclust"))    {install.packages("pvclust")}
+if (!require("MASS"))       {install.packages("MASS")}
+if (!require("lubridate"))  {install.packages("lubridate")}
+if (!require("Select"))     {install.packages("Select")}
+```
+Carregando as bibliotecas que serão utilizadas:
+```{r message=FALSE, warning=FALSE}
+options(warn=-1) 
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(GGally)
+library(corrplot)
+library(DAAG)
+library(rpart)
+library(rpart.plot)
+library(InformationValue)
+library(rattle)
+library(tclust)
+library(cluster)
+library(fpc)
+library(pheatmap)
+library(ggcorrplot)
+library(factoextra)
+library(cluster)
+library(NbClust)
+library(gridExtra)
+library(ape)
+library(lubridate)
+library(Select)
+```
+
+## Comandos básicos do R
+```{r}
+var1 <- 40 + 60
+```
+Para visualizar o conteúdo de uma variável basta digitar seu nome:
+```{r}
+var1
+```
+Como utilizar o help do R. Exemplo:
+?mean
+help(mean)
+
+Criando vetores simples com a função c:
+```{r}
+vetor1 <- c(1,2,3,4)
+vetor1
+vetor2 <- c(vetor1,5,6,7)
+```
+Utilizar vetor em uma expressão aritmética:
+```{r}
+vetor3 <- vetor2 * 2
+vetor3
+```
+Primeiro o R multiplica cada valor dentro do vetor3 por 2 e depois soma 100 a este valor:
+```{r}
+vetor4 <- vetor3 * 2 + 100
+vetor4
+```
+Função para obter a raiz quadrada:
+```{r}
+sqrt(4)
+```
+Função para obter o valor absoluto:
+```{r}
+abs(vetor3)
+```
+Soma de vetores de tamanhos diferentes resultam em um outro reciclando o mesmo para conter o tamanho do maior vetor entre as somas:
+```{r}
+vetor5 <- c(1, 2, 3, 4) + c(0, 10)
+vetor5
+```
+Warning "longer object length is not a multiple of shorter object length" , quando tentamos somar vetores de tamanhos diferentes não multiplos
+```{r}
+vetor1
+vetor2
+vetor6 <- vetor1 + vetor2
+vetor6
+```
+## Lógicos
+O R segue a ordem aritmética de operações e expressões lógicas.
+
+x menor que y?
+```{r}
+x <- 1
+y <- 5
+x < y
+```
+x menor ou igual a y?
+```{r}
+x <= y
+```
+x maior que y?
+```{r}
+x > y
+```
+x maior ou igual a y?
+```{r}
+x >= y
+```
+x igual a y?
+```{r}
+x == y
+```
+x diferente de y?
+```{r}
+x != y
+```
+Negativa de x
+```{r}
+!x	
+```
+x ou y são verdadeiros?
+```{r}
+x | y
+```
+x e y são verdadeiros?
+```{r}
+x & y
+```
+x ou y são verdadeiros (apenas um deles)?
+```{r}
+xor(x, y)
+```
+## Sequências numéricas
+Podemos gerar sequências numéricas de várias formas no R. O operador mais importante para gerar seqüências lineares regulares é o ":" 
+```{r}
+1:15
+```
+Como criar uma sequência numérica utilizando a função seq:
+```{r}
+seq(1, 20)
+```
+Como criar uma sequência numérica a partir de um valor incial até um valor limite 
+incrementado sendo incrementado por valor pré-definido.
+```{r}
+seq(from=1, to=21, by=2)
+```
+Ou:
+```{r}
+ seq(0, 10, by=0.5)
+```
+Como criar uma sequência de 30 números entre 5 e 10:
+```{r}
+seq1 <- seq(5,10, length=30)
+seq1
+```
+Utilizar a função length para saber o tamanho de um objeto:
+```{r}
+length(seq1)
+```
+Seq com along.with para determinar a quantidade de números da sequência:
+```{r}
+seq(along.with = seq1)
+```
+Outra forma de conseguir o mesmo resultado utilizando a função seq_along:
+```{r}
+seq_along(seq1)
+```
+Criando um vetor com a função rep. Repetir 30 vezes o valor 0 (zero):
+```{r}
+rep(0,times = 30)
+```
+Repetir um vetor utilizando rep:
+```{r}
+rep(c("MARIA","APARECIDA","PEREIRA","MARY"), times = 5)
+```
+Repetir 
+```{r}
+rep(c("OI","TUDO","BEM"), each = 4)
+```
+## Vetores
+Vetores são homogêneos.
+
+"Os elementos de um vetor são sempre da mesma classe. Ou todos são numéricos, ou são todos character, ou todos são lógicos etc. Não dá para ter um número e um character no mesmo vetor, por exemplo.
+Se colocarmos duas ou mais classes diferentes dentro de um mesmo vetor, o R vai forçar que todos os elementos passem a pertencer à mesma classe. O número 1.7 viraria "1.7" se fosse colocado ao lado de um "a".
+"
+(http://material.curso-r.com/rbase/#objetos)
+```{r}
+y1 <- c(1.7, "a")
+y1
+class(y1) # qual classe é o objeto
+y2 <- c(TRUE, 2)
+y2
+class(y2) # qual classe é o objeto
+y3 <- c(TRUE, "a")
+y3
+class(y3) # qual classe é o objeto
+```
+"A ordem de precedência é:
+
+DOMINANTE character > complex > numeric > integer > logical RECESSIVO" (http://material.curso-r.com/rbase/#objetos)
+
+Criando um vetor simples:
+```{r}
+vet1 <-c(0.5, 55, -10, 6)
+vet1
+```
+Verificar os dados de um vetor através de uma condição lógica. Dentro do vetor quais valores são
+menores do que 1:
+```{r}
+Quem_eh_menor <- vet1 < 1
+Quem_eh_menor
+```
+Utilizar a função paste() com collapse, para unir os elementos do vetor e separá-los com espaço " ": 
+```{r}
+paste1 <- c("Oi","tudo","bem?")
+paste1
+paste(paste1, collapse = " ")
+paste("Oi","tudo","bem?",sep=" ") #Utilizar paste com o parâmetro sep, para obter resultado semelhante
+```
+Outro exemplo:
+```{r}
+paste(c(1:3), c("X", "Y", "Z"), sep="")
+```
+## Valores ausentes
+Um problema comum para limpeza e exploração de dados é lidar com os valores ausentes, e por este motivo não devem ser ignorados mas estudados com rigor.
+
+No R existem valores reservados para representar dados faltantes, infinitos, e indefinições matemáticas.
+NA (Not Available) significa dado faltante/indisponível. É o null do SQL ou o . do SAS. O NA tem uma classe, ou seja, podemos ter NA numeric, NA character etc.
+
+```{r}
+x <- c(20, NA, 10, NA)
+x
+```
+Ao tentar realizar alguma operação com um dado NA:
+```{r}
+TesteNA <- x*2
+TesteNA
+is.na(TesteNA) #Através da função saber quais valores são NA
+```
+NaN (Not a Number) não é um número
+NaN (Not a Number) representa indefinições matemáticas. Um NaN é um NA, mas a recíproca não é verdadeira.
+```{r}
+TesteNan <- 0/0
+TesteNan
+is.nan(TesteNan)
+```
+Inf (Infinito) é um número muito grande ou o limite matemático:
+```{r}
+TesteInf <- 10^310
+TesteInf
+is.infinite(TesteInf) #função para saber se um objeto é Inf
+```
+NULL representa a ausência de informação. Conceitualmente, a diferença entre NA e NULL é sutil, mas, no R, o NA está mais alinhado com os conceitos de estatística (ou como gostaríamos que os dados faltantes se comportassem em análise de dados) e o NULL está em sintonia com comportamentos de lógica de programação.
+```{r}
+TesteNull <- NULL
+TesteNull
+is.null(TesteNull) #função para saber se um objeto é NULL
+```
+## Data e Hora
+
+Existem várias formas de criar objetos dessa classe. Internamente essas funções assumem por padrão o formato ano, mês e dia.
+A biblioteca lubridate facilita a manipulação de datas.
+
+"As datas são representadas pela classe "Date" e as horas são representadas pelas classes "POSIXct" e "POSIXlt". Internamente, as datas são armazenadas como o número de dias desde 1970-jan-01 e os horários são armazenados como o número de segundos desde 1970-jan-01 (para "POSIXct") ou uma lista de segundos, minutos, horas etc. (para "POSIXlt")." Curso iterativo Aprenda R no R
+```{r}
+library(lubridate)
+TesteDataString <- "2019-07-01"
+TesteDataString
+class(TesteDataString)
+TesteConverterDate <- date(TesteDataString)
+TesteConverterDate
+class(TesteConverterDate)
+```
+Função as_date, converte para um objeto date:
+```{r}
+TesteAsDate <- as_date(TesteDataString)
+class(TesteAsDate)
+```
+Data atual
+```{r}
+dataAtual <- Sys.Date()
+dataAtual
+```
+Algumas funções da biblioteca lubridate:
+second()   - extrai os segundos.
+minute()   - extrai os minutos.
+hour()     - extrai a hora.
+wday()     - extrai o dia da semana.
+mday()     - extrai o dia do mês.
+month()    - extrai o mês.
+year()     - extrai o ano
+quarters() - trimestre do ano (Q1-Q4) de qualquer objeto de data ou hora
+```{r}
+DataHoraAtual <- Sys.time() #função para trazer data e hora atual
+DataHoraAtual
+second(DataHoraAtual) #segundos
+day(DataHoraAtual)    #dia
+month(DataHoraAtual)  #mês
+year(DataHoraAtual)   #ano
+wday(DataHoraAtual)   #dia da semana
+wday(DataHoraAtual, label = TRUE)
+quarters(DataHoraAtual)
+```
+Função  strptime(), para formatar data e hora:
+```{r}
+TesteStrptime <- "24:03:2019 20:00"
+dataHora <-strptime(TesteStrptime, "%d:%m:%Y %H:%M")
+dataHora
+```
+Função difftime(), para saber a quantidade de tempo em dias entre duas datas:
+```{r}
+TesteDiff <- difftime(Sys.time(), dataHora, units = 'days')
+TesteDiff
+```
+## Matrizes e tabelas
+Matrizes são vetores com duas dimensões (e por isso só possuem elementos de uma mesma classe).
+```{r}
+TesteMatriz1 <- matrix(1:12, nrow = 4, ncol = 6)
+TesteMatriz1
+```
+Repare que os números de 1 a 12 foram dispostos na matriz coluna por coluna (column-wise), ou seja, preenchendo de cima para baixo e depois da esquerda para a direita. O R novamente "reciclou"" o objeto, repetindo os números até completar todas as linhas e colunas.
+
+Operações úteis:
+Seleciona a terceira linha:
+```{r}
+TesteMatriz1[3,  ]   
+```
+Seleciona a segunda coluna:
+```{r}
+TesteMatriz1[ , 2]
+```
+seleciona o primeiro elemento da segunda coluna
+```{r}
+TesteMatriz1[1, 2]
+```
+matriz transposta
+```{r}
+t(TesteMatriz1) 
+```
+# multiplicação matricial
+```{r}
+TesteMatriz2 <- matrix(1:12, nrow = 4, ncol = 6)
+TesteMatriz3 <- TesteMatriz1 * TesteMatriz2 
+TesteMatriz3  
+```
+## Amostras e Simulações
+Pega uma amostra do tamanho especificado dos elementos de x usando com ou sem substituição.
+Em um array de 1 a 6, selecione 4 números aleatórios.
+```{r}
+sample(1:6, 4, replace = TRUE)
+sample(LETTERS)
+```
+rbinom
+```{r}
+ rbinom(1,size=100,prob = 0.7)
+```
+## Funções
+No R é possível criarmos nossas próprias funções.
+Analisar: http://adv-r.had.co.nz/Functions.html
+```{r}
+soma <- function(x, y = 0) {
+  resposta <- x + y
+  return(resposta)
+}
+soma(15,10)
+soma(21) # Neste caso como o parâmetro de entrada y tem um valor padrão ZERO, não ocorreu erro e 21+0 (x + y)
+```
+Função com nomeação dos parâmetros:
+```{r}
+f <- function(par1, par2, par3) {
+  list(PrimeiroParametro = par1, SegundoParametro = par2, TerceiroParametro = par3)
+}
+str(f(1, 2, 3)) #Estrutura do data.frame. Mostra, entre outras coisas, as classes de cada coluna.
+```
+Função imprimindo números:
+```{r}
+fImprime <- function () {
+  vetor <- 30:35
+indices <- seq_along(vetor) # cria o vetor de índices segundo o tamanho 
+                            # do objeto vetor. 
+for(i in indices) {
+  print(vetor[1:i] / 2)
+  }
+}
+fImprime()
+```
+## Listas
+Listas são um tipo especial de vetor que aceita elementos de classes diferentes.
+```{r}
+ListaDeCompras <-  list( Nome = "Compras para Casa",
+                         DtaLista = as.Date("2019-07-01"),                      
+                             itensLimpeza = list(
+                                            list(descricao = "Sabão em Pó", 
+                                                 Marca = "OMO", 
+                                                 valor = 10.00),
+                                            list(descricao = "Detergente", 
+                                                 Marca = "Minerva", 
+                                                 valor = 3.90)
+                                           ), 
+                         itensAlimentos = list(
+                                            list(descricao = "Arroz", 
+                                                 Marca = "Camil", 
+												                         Tipo = "integral", 
+                                                 valor = 5.00),
+                                      list(descricao = "Feijão", 
+                                           Marca = "Camil", 
+												                   Tipo = "Carioca",
+                                           valor = 3.90)
+                                      )
+
+               )
+                    
+ListaDeCompras
+```
+## Manipulação com dplyr
+O dplyr é o pacote mais útil para realizar transformação de dados. Os scripts em R que fazem uso inteligente dos verbos dplyr e as facilidades do operador pipe tendem a ficar mais legíveis e organizados sem perder velocidade de execução.
+
+As principais funções do dplyr são:
+
+filter() - filtra linhas onde podemos utilizar os operadores:
+1) ==, >, >= etc
+2) &, |, !, xor()
+3) is.na()
+4) between(), near()
+
+```{r}
+View(starwars)
+Humanos<- filter(starwars, species == "Human")
+View(Humanos)
+```
+select() - seleciona colunas
+```{r}
+#library(dplyr)
+#select(starwars,name:species)
+#Starwars2 <- starwars %>% 
+  #select( name, species)
+```
+mutate() - cria/modifica colunas
+A função mutate() cria ou modifica colunas. Ela é equivalente à função transform(), mas aceita várias novas colunas iterativamente. Novas variáveis devem ter o mesmo número de linhas da base original (ou terem comprimento 1).
+```{r}
+starwars2 <- starwars
+starwars3 <- mutate(starwars2, planeta = homeworld)
+```
+arrange() - ordena a base 
+A função arrange() ordena a base. O argumento desc= pode ser utilizado para gerar uma ordem decrescente.
+```{r}
+arrange(starwars3,desc(mass)) # ordenação pela coluna mass
+```
+summarise() - sumariza a base
+A função summarise() sumariza a base. Ela aplica uma função às variáveis, retornando um vetor de tamanho 1. Geralmente ela é utilizada em conjunto da função group_by().
+```{r}
+starwars4<- summarize(starwars3,avgStar = mean(mass))
+starwars3 %>% 
+  group_by(homeworld) %>% 
+  summarise(n = n(), espvida = mean(height)) -> starheight

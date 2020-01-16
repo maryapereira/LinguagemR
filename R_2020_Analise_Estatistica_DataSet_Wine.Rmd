@@ -1,0 +1,826 @@
+---
+title: "Trabalho: Conceitos Estatísticos para IA"
+output: html_document
+---
+<p>**Turma 6IA**</p>
+<p>**Integrantes:**</p>
+<p>RM 334398 - Fabio Bujardão</p>
+<p>RM 334177 - Leonardo</p>
+<p>RM 334085 - Maria Aparecida Pereira</p>
+<p>RM 334307 - Renata Martins Marchese</p>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r message=FALSE}
+options(warn=-1)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(GGally)
+library(corrplot)
+library(DAAG)
+library(rpart)
+library(rpart.plot)
+library(InformationValue)
+library(rattle)
+library(tclust)
+library(cluster)
+library(fpc)
+```
+Utilizando a base descrita e disponibilizada de vinhos desta região de Portugal com as variáveis de características (composição) dos vinhos.
+
+**Etapa 1:**
+Faça um algoritmo que estime a variável “Quality” em função das características físico-químicas dos vinhos.
+
+<h1>**1.1 Análise Exploratória dos dados**</h1>
+```{r}
+vinhos <- read.csv("C:/Users/MARIAPEREIRA/OneDrive/FIAP/Estatistica/Trabalho/BaseWine_Red_e_White.csv", row.names=1, sep=";", dec=",", as.is=T)
+```
+Analisando a dimensão da tabela (dataframe), onde constatamos 6497 linhas e 13 colunas.
+```{r}
+dim(vinhos)
+```
+Verificar o tipo da variável, basicamente para saber se ela é numérica(escalar) ou categórica.
+```{r}
+str(vinhos)
+```
+Verificar se tem algum valor faltante, para saber como os dados devem ser tratados. 
+Caso ocorra algum valor faltante, em alguma das variáveis, será necessario avaliar
+qual técnica deve ser utilizada para preencher o mesmo.
+```{r}
+sum(is.na(vinhos)) 
+```
+Analisando Média, mediana , 3º Quartil , o valor máximo e mínimo para cada variável.
+Aqui já podemos notar que a variável residualsugar possui  Median : 3.00 e  Mean   : 5.44 
+com um diferença considerável o que pode após outras análises, no decorrer desta 
+exploração, identificar se dentro desta variável possui valores outlier e/ou não segue uma distribuição normal de dados.
+```{r}
+summary(vinhos)
+```
+Ver em outra aba o dataframe
+```{r}
+View(vinhos)
+```
+Como nesta etapa não será considerado o atributo Vinho (WHITE/RED), iremos remover do nosso dataset
+```{r}
+vinhos2 <- select(vinhos, -Vinho)
+```
+Criando uma variável com os nomes dos atributos
+```{r}
+labels <- names(vinhos2)
+```
+<h2>**Análise Univariada**</h2>
+Ver graficamente a distribuição de todos os dados. 
+Os histogramas apresentados abaixo demonstram, como os valores estão distribuídos para cada atributo.
+
+```{r}
+ggplot(gather(vinhos2, cols, value), aes(x = value)) + 
+  facet_wrap(.~cols, scales = "free_x") + 
+  geom_histogram() +
+  stat_count(fill='red')
+```
+
+Os gráficos abaixo mostram o histograma, QQplot e BoxPlot para cada variável.
+
+<p>**HISTOGRAMA**</p>
+O histograma mostra a distribuição dos dados em relação a sua frequencia dos dadose a linha verde indica a representação deste dado em forma de densidade dos dados.
+
+<p>**QQPLOT**</p>
+O QQplot apresenta o gráfico QQ, ou quantile-quantile plot, é uma ferramenta gráfica para nos ajudar a avaliar se um conjunto de dados plausivelmente veio de alguma distribuição teórica, como Normal ou exponencial. Por exemplo, se executarmos uma análise estatística que pressupõe que nossa variável dependente é normalmente distribuída, podemos usar um gráfico de QQ Normal para verificar essa suposição. É apenas uma verificação visual, não uma prova hermética, então é algo subjetivo. Mas nos permite ver rapidamente se nossa suposição é plausível, e se não, como a suposição é violada e quais pontos de dados contribuem para a violação.
+
+Um gráfico de QQ é um gráfico de dispersão criado pela plotagem de dois conjuntos de quantis um contra o outro. Se ambos os conjuntos de quantis vierem da mesma distribuição, devemos ver os pontos formando uma linha que é mais ou menos reta. Aqui está um exemplo de um gráfico de QQ Normal quando ambos os conjuntos de quantis realmente vêm de distribuições Normais.
+
+<p>**BOXPLOT**</p>
+O boxplot é a representação gráfica (diagrama de caixas), utilizado para avaliar a distribuição
+empírica dos dados, é formado pelo primeiro, segundo (mais conhecido como mediana) e terceito quartil.
+Valores além do limite inferior e superior, mostram os prováveis outiliers (valores discrepantes).
+
+Acrescentamos a imagem abaixo para facilitar a explicação que buscamos apresentar:
+
+
+<center>![curva_normal](http://www.learnpicu.com/_/rsrc/1458913250240/basic-research-statistics/medianmode.jpg)</center>
+
+
+Adicionamos ao gráfico do boxplot, um ponto vermelho, para indicar a média dos dados.
+```{r}
+par (mfrow=c(2,3))
+
+hist(vinhos$fixedacidity, probability = TRUE)
+lines(density(vinhos$fixedacidity), col="green3") 
+abline(v = mean(vinhos$fixedacidity), col = "royalblue", lwd = 2)
+abline(v = median(vinhos$fixedacidity), col = "red", lwd = 2)
+legend(x = "topright", c("Densidade", "Média", "Mediana"), col = c("green3", "royalblue", "red"), lwd = c(2, 2, 2))
+qqnorm(vinhos$fixedacidity) 
+qqline(vinhos$fixedacidity, col="blue")
+boxplot(vinhos$fixedacidity, main='Boxplot',xlab="fixedacidity", ylab="Values")
+
+points(mean(vinhos$fixedacidity),col="red",pch=8)
+
+hist(vinhos$volatileacidity, probability = TRUE)
+lines(density(vinhos$volatileacidity), col="green3")
+abline(v = mean(vinhos$volatileacidity), col = "royalblue", lwd = 2)
+abline(v = median(vinhos$volatileacidity), col = "red", lwd = 2)
+legend(x = "topright", c("Densidade", "Média", "Mediana"), col = c("green3", "royalblue", "red"), lwd = c(2, 2, 2))
+qqnorm(vinhos$volatileacidity)
+qqline(vinhos$volatileacidity, col="blue")
+boxplot(vinhos$volatileacidity, main='Boxplot',xlab="volatileacidity", ylab="Values")
+points(mean(vinhos$volatileacidity),col="red",pch=8)
+
+hist(vinhos$citricacid, probability = TRUE)
+lines(density(vinhos$citricacid), col="green3")
+qqnorm(vinhos$citricacid) 
+qqline(vinhos$citricacid, col="blue")
+boxplot(vinhos$citricacid, main='Boxplot',xlab="citricacid", ylab="Values")
+points(mean(vinhos$citricacid),col="red",pch=8)
+
+hist(vinhos$residualsugar, probability = TRUE)
+lines(density(vinhos$residualsugar), col="green3")
+qqnorm(vinhos$residualsugar)
+qqline(vinhos$residualsugar, col="blue")
+boxplot(vinhos$residualsugar, main='Boxplot',xlab="residualsugar", ylab="Values")
+points(mean(vinhos$residualsugar),col="red",pch=8)
+
+hist(vinhos$chlorides, probability = TRUE)
+lines(density(vinhos$chlorides), col="green3") 
+qqnorm(vinhos$chlorides) 
+qqline(vinhos$chlorides, col="blue")
+boxplot(vinhos$chlorides, main='Boxplot',xlab="chlorides", ylab="Values")
+points(mean(vinhos$chlorides),col="red",pch=8)
+
+hist(vinhos$freesulfurdioxide, probability = TRUE)
+lines(density(vinhos$freesulfurdioxide), col="green3") 
+qqnorm(vinhos$freesulfurdioxide)
+qqline(vinhos$freesulfurdioxide, col="blue")
+boxplot(vinhos$freesulfurdioxide, main='Boxplot',xlab="freesulfurdioxide", ylab="Values")
+points(mean(vinhos$freesulfurdioxide),col="red",pch=8)
+
+hist(vinhos$totalsulfurdioxide, probability = TRUE)
+lines(density(vinhos$totalsulfurdioxide), col="green3") 
+qqnorm(vinhos$totalsulfurdioxide)
+qqline(vinhos$totalsulfurdioxide, col="blue")
+boxplot(vinhos$totalsulfurdioxide, main='Boxplot',xlab="totalsulfurdioxide", ylab="Values")
+points(mean(vinhos$totalsulfurdioxide),col="red",pch=8)
+
+hist(vinhos$density, probability = TRUE)
+lines(density(vinhos$density), col="green3")
+qqnorm(vinhos$density) 
+qqline(vinhos$density, col="blue")
+boxplot(vinhos$density, main='Boxplot',xlab="density", ylab="Values")
+points(mean(vinhos$density),col="red",pch=8)
+
+hist(vinhos$pH, probability = TRUE)
+lines(density(vinhos$pH), col="green3") 
+qqnorm(vinhos$pH) 
+qqline(vinhos$pH, col="blue")
+boxplot(vinhos$pH, main='Boxplot',xlab="pH", ylab="Values")
+points(mean(vinhos$pH),col="red",pch=8)
+
+hist(vinhos$sulphates, probability = TRUE)
+lines(density(vinhos$sulphates), col="green3")
+qqnorm(vinhos$sulphates) 
+qqline(vinhos$sulphates, col="blue")
+boxplot(vinhos$sulphates, main='Boxplot',xlab="sulphates", ylab="Values")
+points(mean(vinhos$sulphates),col="red",pch=8)
+
+hist(vinhos$alcohol, probability = TRUE)
+lines(density(vinhos$alcohol), col="green3") 
+qqnorm(vinhos$alcohol) 
+qqline(vinhos$alcohol, col="blue")
+boxplot(vinhos$alcohol, main='Boxplot',xlab="alcohol", ylab="Values")
+points(mean(vinhos$alcohol),col="red",pch=8)
+```
+Considerando a variável quality como contínua numérica, escalar.
+
+```{r}
+hist(vinhos$quality, probability = TRUE)
+lines(density(vinhos$quality), col="green3")
+qqnorm(vinhos$quality) 
+qqline(vinhos$quality, col="blue")
+boxplot(vinhos$quality, main='Boxplot',xlab="quality", ylab="Values")
+points(mean(vinhos$quality),col="red",pch=8)
+```
+
+Verificamos as simetrias através do histograma. 
+Nas três formas de representações gráficas, analisamos se ela é uma curva normal, através da linha.
+Quanto mais ela fica proxima a linha, mais será simétrica
+
+**COMENTAR OS RESULTADOS ACIMA.**
+
+Considerando a variável quality como contínua numérica, escalar
+
+```{r}
+hist(vinhos$quality, probability = TRUE)
+lines(density(vinhos$quality), col="green3") 
+qqnorm(vinhos$quality) 
+qqline(vinhos$quality, col="blue")
+boxplot(vinhos$quality, main='Boxplot',xlab="quality", ylab="Values")
+points(mean(vinhos$quality),col="red",pch=8)
+```
+
+<h2>1.2 Exclusão de outliers, caso necessário (sempre explicando a opção)</h2>
+
+De acordo com as explicações dos gráficos acima, consideramos que existem valores discrepantes (outliers), nos atributos residualsugar e alcohol.
+Decidimos por eliminar os registros onde contém outiliers.
+Para isso determinamos  valores outliers aqueles vinhos com valores de alcohol menores que 6
+E residualsugar com valores acima que 25.
+
+```{r}
+dim(vinhos)
+vinhos3 <- subset(vinhos2, vinhos2$residualsugar < 25)
+vinhos3 <- subset(vinhos3, vinhos3$alcohol > 6) 
+dim(vinhos3)
+```
+<p>Comparando **residualsugar** antes e depois.</p>
+**Antes**
+```{r}
+par (mfrow=c(2,3))
+hist(vinhos2$residualsugar, probability = TRUE)
+lines(density(vinhos2$residualsugar), col="green3") 
+qqnorm(vinhos2$residualsugar)  
+qqline(vinhos2$residualsugar, col="blue")
+boxplot(vinhos2$residualsugar, main='Boxplot',xlab="residualsugar", ylab="Values")
+points(mean(vinhos2$residualsugar),col="red",pch=8)
+```
+
+**Depois**
+
+```{r}
+hist(vinhos3$residualsugar, probability = TRUE)
+lines(density(vinhos3$residualsugar), col="green3") 
+qqnorm(vinhos3$residualsugar)
+qqline(vinhos3$residualsugar, col="blue")
+boxplot(vinhos3$residualsugar, main='Boxplot',xlab="residualsugar", ylab="Values")
+points(mean(vinhos3$residualsugar),col="red",pch=8)
+```
+<p>Comparando **alcohol** antes e depois.</p>
+
+**Antes**
+
+```{r}
+par (mfrow=c(2,3))
+hist(vinhos2$alcohol, probability = TRUE)
+lines(density(vinhos2$alcohol), col="green3") 
+qqnorm(vinhos2$alcohol)
+qqline(vinhos2$alcohol, col="blue")
+boxplot(vinhos2$alcohol, main='Boxplot',xlab="alcohol", ylab="Values")
+points(mean(vinhos2$alcohol),col="red",pch=8)
+```
+
+** Depois**
+
+```{r}
+hist(vinhos3$alcohol, probability = TRUE)
+lines(density(vinhos3$alcohol), col="green3") 
+qqnorm(vinhos3$alcohol) 
+qqline(vinhos3$alcohol, col="blue")
+boxplot(vinhos3$alcohol, main='Boxplot',xlab="alcohol", ylab="Values")
+points(mean(vinhos3$alcohol),col="red",pch=8)
+```
+
+Após o devido tratamento dos valores outiliers, abaixo o boxplot de todos os atributos.
+
+```{r}
+par(mfrow= c(1,1))
+boxplot(vinhos3,col='green',main='Wine quality values',xaxt = 'n',  xlab = '')
+axis(1, labels = FALSE)
+text(x =  seq_along(colnames(vinhos3)), y = par("usr")[3] - 1, srt = 45, adj = 1,labels = colnames(vinhos3), xpd = TRUE)
+```
+
+<h2>**Análise Bivariada e Multivariada**</h2>
+
+<p>**Painel de correlação**</p>
+
+E assim por diante. Para ver todos no mesmo gráfico.
+
+```{r}
+panel.cor <- function(x, y, digits=2, prefix ="", cex.cor,
+                      ...)  {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- cor(x, y , use = "pairwise.complete.obs")
+  txt <- format(c(r, 0.123456789), digits = digits) [1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor))
+    cex <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex * abs(r))
+}
+
+pairs(vinhos3, lower.panel=panel.smooth, upper.panel=panel.cor)
+```
+
+**Correlação**
+
+```{r}
+par (mfrow=c(1,1))
+ggplot(vinhos2, aes(x = quality, y = fixedacidity)) + 
+  geom_point( size = 3) +
+  labs(title = "fixedacidity", x= "Quality", y = "fixedacidity")
+```
+
+Ruim RETIRAR ??
+```{r}
+
+ggplot(vinhos2, aes(x = quality, y = alcohol)) + 
+  geom_boxplot() +facet_grid(.~quality) +
+  labs(title = "alcohol", x= "Quality", y = "alcohol")
+```
+
+Ruim RETIRAR ??
+```{r}
+ggplot(vinhos, aes(x = quality, y = alcohol)) + 
+  geom_boxplot(outlier.colour = "red", outlier.shape = 1,  colour = "#3366FF")+facet_grid(.~quality) +
+  labs(title = "Plot for alcohol", x= "Wine color", y = "Alcohol Levels") +
+  theme(axis.title.x = element_text(size=15, colour="black"),
+        axis.title.y = element_text(size=15, colour="black"),
+        axis.text.x = element_text(size=10, colour ="black"),
+        axis.text.y = element_text(size=10, colour ="black") )
+```
+
+Ruim RETIRAR ??
+
+```{r}
+ggplot(vinhos, aes(x = quality, y = alcohol)) + 
+  geom_boxplot(outlier.colour = "red", outlier.shape = 1,  colour = "#3366FF")+facet_grid(.~quality)
+par (mfrow=c(1,1))
+
+```
+
+**Gráfico completo de correlação**
+
+Sem variável vinho (cor) select(vinhos2, -Vinho)
+```{r}
+
+vinhos3 <-  vinhos2[,-13] 
+grafico_vinhos3 <- vinhos3
+grafico_vinhos3$quality <- as.factor(grafico_vinhos3$quality)
+ggpairs(grafico_vinhos3, aes(colour = quality, alpha = 0.4))
+
+```
+
+**Análise de correlação**
+
+```{r}
+library(corrplot)
+M <- cor(vinhos3)
+corrplot(M, method = "number")
+```
+**1.3 Treinamento dos modelos e Validação **
+Em cada opção de modelo colocar a saída do modelo e sua respectiva métrica validação.
+
+Dividir em treino e teste
+Divisao do banco de dados completo em treinamento e teste
+definir % de casos de treino
+```{r}
+prt <- 2/3
+```
+Amostra de casos de treino aleatória
+```{r}
+set.seed(2019)
+treino <- sample(1:NROW(vinhos3), as.integer(prt*NROW(vinhos3)))
+trainData <- vinhos3[treino,]
+testData  <- vinhos3[-treino,]
+
+prop.table(table(trainData$quality))
+prop.table(table(testData$quality))
+```
+**1.4 Para cada etapa anterior colocar comentários sobre a técnica utiliza e análise sobre as variáveis utilizadas e seus respectivos “achados” **
+
+Técnicas: Regressão Linear, Árvore de Regressão
+
+UTILIZANDO REGRESSÃO LINEAR
+# Não precisar padronizar?
+```{r}
+modelo_regr_mult <- lm(quality ~ fixedacidity + volatileacidity + citricacid + residualsugar + chlorides + freesulfurdioxide + totalsulfurdioxide + density + pH + sulphates + alcohol, data=trainData)
+
+```
+Mostra os resultados
+```{r}
+summary(modelo_regr_mult)
+```
+
+interpretar os coeficiente
+```{r}
+
+summary(modelo_regr_mult)$coefficient
+```
+
+Retreinar com outra variável
+```{r}
+confint(modelo_regr_mult)
+sigma(modelo_regr_mult)/mean(vinhos3$quality)
+```
+É PARA COLOCAR ESSE LINK ?
+# http://www.sthda.com/english/articles/40-regression-analysis/168-multiple-linear-regression-in-r/
+
+Predict quality com regressao multipla lm
+```{r}
+quality_lm_predict <- predict(modelo_regr_mult, testData)
+```
+
+Avaliar modelo
+comparar_pred <- data.frame(cbind(actuals=testData$quality, predicteds=quality_lm_predict))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(comparar_pred) # 53%
+comparar_pred
+
+min_max_accuracy <- mean(apply(comparar_pred, 1, min) / apply(comparar_pred, 1, max))  
+# => 91%, min_max accuracy é a acurácia máxima
+mape <- mean(abs((comparar_pred$predicteds - comparar_pred$actuals))/comparar_pred$actuals)
+# => 9,72%, mean absolute percentage deviation
+```{r}
+# ???? O QUE FAZER COM ESSA PARTE
+# library(DAAG)
+# cv.lm(df=testData, modelo_regr_mult, m=3)
+# cvResults <- suppressWarnings(CVlm(df=vinhos3, form.lm=quality ~ speed, m=5, dots=FALSE, seed=29, legend.pos="topleft",  printit=FALSE, main="Small symbols are predicted values while bigger ones are actuals."));  # performs the CV
+```
+UTILIZANDO ÁRVORE DE REGRESSÃO
+# Regression Tree Example
+
+Treinar árvore de regressão 
+
+Método class (classificação) e anova (regressão)
+```{r}
+modelo_arv_regr <- rpart(quality ~ fixedacidity + volatileacidity + citricacid + residualsugar + chlorides + freesulfurdioxide + totalsulfurdioxide + density + pH + sulphates + alcohol, 
+             method = "anova", data = trainData)
+```
+Mostrar os resultados
+```{r}
+
+printcp(modelo_arv_regr)
+```
+Visualize cross-validation results  
+```{r}
+plotcp(modelo_arv_regr)
+```
+
+Detailed summary of splits 
+```{r}
+summary(modelo_arv_regr)
+```
+create additional plots
+```{r}
+par(mfrow=c(1,2)) # two plots on one page 
+rsq.rpart(modelo_arv_regr) # visualize cross-validation results 
+```
+plot tree
+```{r}
+plot(modelo_arv_regr, uniform=TRUE, 
+     main="Árvore de Regressão da qualidade dos vinhos")
+text(modelo_arv_regr, use.n=TRUE, all=TRUE, cex=.8)
+
+par(mfrow=c(1,1))
+rpart.plot(modelo_arv_regr, type=4,under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-3, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+```
+
+# https://blog.revolutionanalytics.com/2013/06/plotting-classification-and-regression-trees-with-plotrpart.html
+
+**1.5 Com a métrica correta faça a comparam entre os diferentes os algoritmos e qual foi o melhor entre eles.**
+
+**FAZER ->** Comparar os 2 modelos. Fazer avaliação e calculo de erro para regressão
+
+
+<h1>Etapa 2</h1>
+Sabendo que os vinhos com notas>=6 são considerados vinhos de boa qualidade faça um algoritmo que classifique os vinhos em “Bom” ou “Ruim” em função de suas características físico-químicas; 
+
+**2.1 Definição da variável resposta**
+
+# Separando a quality em categoria >=6 (bom) e <6(ruim)
+# 1 é bom e 0 é ruim
+```{r}
+vinhos3 %>% mutate(qualidade = if_else(quality>=6, "Bom", "Ruim")) -> vinhos4
+vinhos4 <- select(vinhos4, -quality)
+head(vinhos4) #visualizar os dados
+```
+
+***2.2 Análise Exploratória dos dados**
+
+```{r}
+ggplot(vinhos4, aes(x=qualidade, fill = qualidade)) +
+  geom_bar(stat="count") +
+  geom_text(position = "stack", stat='count',aes(label=..count..), vjust = -0.5)+
+  labs(y="Número de observações", x="Qualidade do vinhos") +
+  theme(legend.position="none")
+
+vinhos4 %>%
+  gather(-qualidade, key = "var", value = "value") %>% 
+  ggplot(aes(x = qualidade, y = value, color = qualidade)) +
+  geom_boxplot() +
+  facet_wrap(~ var, scales = "free", ncol = 3)+
+  theme(legend.position="none")
+
+
+# featurePlot(x = vinhos3[, 1:11], 
+#             y = vinhos3$qualidade, plot = "box", 
+#             scales = list(x = list(relation="free"), y = list(relation="free")), 
+#             adjust = 1.5, pch = ".", 
+#             layout = c(4, 3), auto.key = list(columns = 3))
+
+
+#trocar a cor(verde é bom e vermelho é ruim)
+ggpairs(vinhos4, 
+        aes(alpha=0.6, color = qualidade),
+        upper = list(continuous = wrap("cor", size = 2)),
+        diag = list(continuous = "barDiag"),
+        lower = list(continuous = "smooth"))
+
+```
+
+
+**2.3 Treinamento dos modelos e Validação ** 
+Em cada opção de modelo colocar a saída do modelo e sua respectiva métrica validação.
+Divisão de treino e test
+```{r}
+prt <- 2/3
+```
+
+Criar coluna Bom e ruim e definir como numerica categorica
+```{r}
+vinhos4 %>% mutate(qualidade_num = if_else(qualidade=="Bom",1,0)) -> vinhos4
+
+vinhos4$qualidade_num <- as.factor(vinhos4$qualidade_num)
+head(vinhos4)
+```
+
+
+**2.4 Para cada etapa anterior colocar comentários sobre a técnica utilizada e análise sobre as variáveis utilizadas e seus respectivos “achados” Técnicas: Regressão logística, Árvore de decisão**
+
+# amostra de casos de treino aleatória
+```{r}
+set.seed(2019)
+treino <- sample(1:NROW(vinhos4), as.integer(prt*NROW(vinhos4)))
+
+trainData <- vinhos4[treino,]
+testData  <- vinhos4[-treino,]
+
+prop.table(table(trainData$qualidade))
+prop.table(table(testData$qualidade))
+
+```
+
+Regressão Logística
+```{r}
+
+modelo_log <- glm(qualidade_num ~ fixedacidity + volatileacidity + citricacid + residualsugar + chlorides + freesulfurdioxide + totalsulfurdioxide + density + pH + sulphates + alcohol,     
+                trainData, family = binomial(link=logit))
+
+summary(modelo_log)
+```
+
+Amostra de casos de treino aleatória
+```{r}
+qualidade_pred_prob <- predict(modelo_log, testData)
+
+qualidade_pred_score <- plogis(predict(modelo_log, testData))  # predicted scores
+```
+# or 
+```{r}
+qualidade_pred <- predict(modelo_log, testData, type="response")  # predicted scores
+```
+
+
+
+Criar faixa de probabilidade estava comentado- RETIREI MARY
+```{r}
+qualidade_pred_cat <- ifelse(qualidade_pred > 0.5, "Bom", "Ruim")
+qualidade_pred_cat #nossa definição
+```
+
+#library(InformationValue)
+```{r}
+optCutOff <- optimalCutoff(testData$qualidade_num, qualidade_pred)[1]
+optCutOff
+
+qualidade_pred_cat <- ifelse(qualidade_pred > optCutOff, "Bom", "Ruim")
+qualidade_pred_cat # nossa definição
+```
+
+Avaliação do modelo
+```{r}
+summary(modelo_log)
+
+vif(modelo_log)
+```
+
+# Misclassification error is the percentage mismatch of predcited vs actuals, irrespective of 1’s or 0’s. The lower the misclassification error, the better is your model.
+```{r}
+misClassError(testData$qualidade_num, qualidade_pred, threshold = optCutOff)
+plotROC(testData$qualidade_num, qualidade_pred)
+Concordance(testData$qualidade_num, qualidade_pred) #NAO SEI O QUE É
+confusionMatrix(testData$qualidade_num, qualidade_pred, threshold = optCutOff)
+sensitivity(testData$qualidade_num, qualidade_pred, threshold = optCutOff)
+specificity(testData$qualidade_num, qualidade_pred, threshold = optCutOff)
+```
+
+Arvore de decisão (classificação)
+
+```{r}
+modelo_arv_dec <- rpart(qualidade ~ fixedacidity + volatileacidity + citricacid + residualsugar + chlorides + freesulfurdioxide + totalsulfurdioxide + density + pH + sulphates + alcohol,
+             method="class", data = trainData)
+
+printcp(modelo_arv_dec) # display the results 
+plotcp(modelo_arv_dec) # visualize cross-validation results 
+summary(modelo_arv_dec) # detailed summary of splits
+```
+plot tree 
+```{r}
+plot(modelo_arv_dec, uniform=TRUE, 
+     main="Árvore de decisão da qualidade do vinho")
+text(modelo_arv_dec, use.n=TRUE, all=TRUE, cex=.8)
+
+rpart.plot(modelo_arv_dec, type=4, extra=104, under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-3, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+```
+Alternativa para o plot
+```{r}
+rpart.plot(modelo_arv_dec, type=2, extra="auto", under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=TRUE,   digits=2, varlen=-3, faclen=15,
+           cex=NULL, tweak=1.7,
+           compress=TRUE,box.palette="auto",
+           snip=FALSE)
+
+print(modelo_arv_dec) #mostra as regras
+
+```
+Predict como funcao para trazer a probabilidade do cliente perfil da camapnha(0/1)
+```{r}
+
+yprob <- predict(modelo_arv_dec,testData )
+hist(yprob)
+
+pred_prob <- predict(modelo_arv_dec ,testData)
+
+```
+
+Predict com tipo 'classe' retorna se ? um perfil comprador ou n?o
+
+```{r}
+pred_class <- predict(modelo_arv_dec ,testData , type = "class")
+pred_class 
+
+matriz_confusao <- table(testData$qualidade, pred_class)
+
+diagonal <- diag(matriz_confusao)
+perc.erro <- 1 - sum(diagonal)/sum(matriz_confusao)
+perc.erro
+```
+Alternativa para plot da árvore
+
+#library(rattle)
+```{r}
+fancyRpartPlot(modelo_arv_dec, cex=0.60)
+fancyRpartPlot(modelo_arv_dec, cex=0.60,  palettes=c("Greys", "Oranges"))
+```
+
+#ver o da professora (baseCampanha) -- DEIXEI ESSE COMENTARIO PARA VER O QUE E
+**2.5 Com a métrica correta faça a comparam entre os diferentes os algoritmos e qual foi o melhor entre eles.**
+
+
+
+<h2>Etapa 3<h/2>
+Faça um algoritmo que a partir das características físico-químicas dos vinhos defina grupos para auxiliar na importação.
+
+**3.1 Definição das variáveis segmentadoras**
+Criar grupos
+padronizar os dados
+```{r}
+vinhos3a = vinhos3[,-12]
+
+vinhos3a_padr <- scale(vinhos3a)
+
+```
+
+**3.2 Análise Exploratória dos dados** 
+```{r}
+
+summary(vinhos3a_padr)
+```
+
+**3.3 Critérios para definição da quantidade de grupos (clusters)**
+**3.4 Resultados encontrados – Caracterização dos Clusters**
+**3.5 Para cada etapa anterior colocar comentários sobre a técnica utiliza e análise sobre as variáveis utilizadas e seus respectivos “achados” **
+
+Determinação do número de cluster - curva cotovelo
+Determine number of clusters
+```{r}
+wss <- (nrow(vinhos3a_padr)-1)*sum(apply(vinhos3a_padr,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(vinhos3a_padr, centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares") 
+
+library(tclust)
+clus_teste <- tkmeans(vinhos3a_padr, k = 4, alpha = 0.03)
+plot(clus_teste)
+
+```
+# set.seed(33)
+# output_cluster<-kmeans(geraclus_car,5)
+# segmento<-output_cluster$cluster
+# table (segmento)
+
+# # Mostrando Resulados
+# aggregate(geraclus_car,by=list(segmento),FUN=mean)
+
+# # Mostrando Resultados em gr�ficos
+
+# # Cluster Plot against 1st 2 principal components
+# # vary parameters for most readable graph
+# library(cluster)
+# clusplot(geraclus_car, output_cluster$cluster, color=TRUE, shade=TRUE,
+#          labels=2, lines=0 , cex=0.75)
+
+# # Centroid Plot against 1st 2 discriminant functions
+# library(fpc)
+# plotcluster(geraclus_car, output_cluster$cluster) 
+# 
+# matriz_fim<-cbind(carros,segmento)
+# fix(matriz_fim)
+# 
+# aggregate(matriz_fim,by=list(segmento),FUN=mean)
+
+
+# hier_cluster<-hclust(dist(geraclus_car),method='ward.D2')
+# d <- dist(geraclus_car, method = "euclidean") # distance matrix
+# plot(hier_cluster, ylab='distancia', cex=0.6)
+# 
+# groups <- cutree(hier_cluster, k=5) # cut tree into 5 clusters
+# # draw dendogram with red borders around the 5 clusters
+# rect.hclust(hier_cluster, k=5, border="red") 
+# 
+# groups <- cutree(hier_cluster, k=3) # cut tree into 5 clusters
+# # draw dendogram with red borders around the 5 clusters
+# rect.hclust(hier_cluster, k=3, border="blue") 
+# 
+# # Outros m�todos que podem ser usados s�o: "ward", "single", "complete", "average", "mcquitty", "median" ou "centroid".
+# # A defini��o de qual m�todo usar varia com o objetivo do estudo e com o tipo de matriz de dist�ncia usada.
+
+
+**3.6 Utilizando componentes principais (PCA), explique sobre a quantidade de componentes e a interpretação dos componentes.**
+**3.7 Defina os clusters com os componentes encontrados.**
+**3.8 Quantos clusters utilizando os componentes encontrados**
+**3.9 Resultados encontrados – Caracterização dos Clusters gerado com os componentes**
+**3.10 Cruzar os clusters obtidos a partir das variáveis e clusters obtidos pelos componentes principais. O que aconteceu? Técnicas: K-means, Cluster Hierárquico, Componentes Principais**
+
+
+#alterar o nome vinhos4
+# Para fazer PCA - nao esquecer de PADRONIZAR
+```{r}
+dim(vinhos)
+vinhos4 <- select(vinhos2, -c(Vinho, quality))
+
+vinhos4_pca <- prcomp(vinhos4, scale = TRUE) #padronizando e pca
+summary(vinhos4_pca)
+```
+
+Grafico para ver a melhor quantidade de variáveis
+
+```{r}
+plot(1:ncol(vinhos4), vinhos4_pca$sdev^2, type = "b", xlab = "Componente",
+     ylab = "Variância", pch = 20, cex.axis = 0.8, cex.lab = 0.8)
+
+sum(vinhos4_pca$sdev^2)
+
+vinhos4_pca$rotation[, 1:7]
+
+biplot(vinhos4_pca, xlab = "CP1", ylab = "CP2",cex.lab = 1.0, cex.axis = 1.0)
+
+vinhos4_pca_plot <- prcomp(vinhos4, scale = TRUE, retx = TRUE)
+
+escore1 <- vinhos4_pca$x[, 1]
+print(escore1)
+hist(escore1)
+
+escore2 <- vinhos4_pca$x[, 2]
+
+par (mfrow=c(1,2))
+hist(escore1)
+hist(escore2)
+par (mfrow=c(1,1))
+
+attach(vinhos)
+vinho4_pca2 <-cbind(escore1,escore2)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
